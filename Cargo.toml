@@ -1,0 +1,4 @@
+[workspace]
+members = [
+    "src/decentralized_e-commerce_marketplace",
+]

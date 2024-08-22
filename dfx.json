@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "canisters": {
+    "decentralized_e-commerce_marketplace": {
+      "type": "rust",
+      "package": "decentralized_e-commerce_marketplace",
+      "candid": "src/decentralized_e-commerce_marketplace/decentralized_e-commerce_marketplace.did"
+    }
+  },
+  "output_env_file": ".env"
+}
