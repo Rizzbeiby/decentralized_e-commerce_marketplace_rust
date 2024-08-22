@@ -1,136 +1,91 @@
-# Tokenized Real Estate Ownership Decentralized App In Rust
+# Decentralized E-commerce Marketplace
 
-The Tokenized Real Estate Ownership project is a blockchain-based platform that enables fractional ownership of real estate properties through tokenization. This project aims to democratize real estate investment by allowing investors to purchase tokenized shares of properties, thereby gaining exposure to the real estate market with lower entry barriers.
+## Overview
+
+The Decentralized E-commerce Marketplace is a blockchain-based platform designed to enable trustless transactions between buyers and sellers without the need for intermediaries. This project leverages the capabilities of the Internet Computer to provide a secure, efficient, and transparent environment for online trading. The marketplace supports fundamental e-commerce functionalities, enhanced with blockchain-specific features such as smart contracts, escrow management, and dispute resolution.
 
 ## Features
 
-### 1. Property Management
+### 1. **Product Management**
 
-- Create, read, update, and delete real estate properties.
-- Each property includes details such as address, owner ID, tokenized shares, and a history of changes.
+- **Create Product:** Sellers can list products on the marketplace by providing product details such as name, description, price, and stock quantity.
+- **View Products:** Users can browse the list of available products.
+- **Update Product:** Sellers can update the details of their listed products.
+- **Delete Product:** Sellers can remove their products from the marketplace.
 
-### 2. User Management
+### 2. **Order Management**
 
-- Create, read, update, and delete user information.
-- Each user includes details such as name and contact information.
+- **Create Order:** Buyers can place orders for products. Each order is associated with a unique order ID and includes details such as the buyer's information, product ID, quantity, and total price.
+- **View Orders:** Users can view the orders they have placed.
+- **Update Order:** Orders can be updated by the buyer before they are processed.
+- **Delete Order:** Buyers can cancel their orders if they haven't been processed yet.
 
-### 3. Product History
+### 3. **User Management**
 
-- Maintain a history of changes for each property, including timestamps and descriptions of changes.
+- **Create User:** New users can register on the platform by providing a username, email, and role (buyer, seller, or admin).
+- **View Users:** Admins can view the list of all registered users.
+- **Update User:** Users can update their profile information.
+- **Delete User:** Users can delete their accounts from the platform.
 
-### 4. Ownership Transfer
+### 4. **Escrow Management**
 
-- Transfer ownership shares between users securely and transparently.
-- Update ownership details and record the transfer in the property history.
+- **Create Escrow:** An escrow is created automatically when a buyer places an order. The funds are held in escrow until the transaction is completed.
+- **Release Escrow:** Once the buyer confirms the receipt of the product, the funds in escrow are released to the seller.
+- **Refund Escrow:** In case of a dispute or cancellation, the funds held in escrow can be refunded to the buyer.
 
-### 5. Input Validation
+### 5. **Dispute Resolution**
 
-- Validate input data to ensure that required fields are provided and follow the expected format.
-- Prevent invalid data from being entered into the system, improving data integrity and accuracy.
+- **Initiate Dispute:** Buyers or sellers can initiate a dispute if there is an issue with the transaction.
+- **Resolve Dispute:** Disputes are resolved by an admin, who can choose to complete the order or refund the buyer.
 
-### 6. Error Handling
+### 6. **Product History**
 
-- Provide error handling mechanisms to gracefully handle unexpected errors or invalid requests.
-- Return appropriate error messages and status codes to the client to aid in debugging and troubleshooting.
+- **Track Product History:** Each product's history is recorded, including its creation, updates, and transactions. This provides a transparent view of the product's lifecycle.
 
-### Requirements
+### 7. **Batch Tracking**
 
-- rustc 1.64 or higher
+- **Batch Management:** Products can be grouped into batches, allowing for easier tracking and management of large inventories. Each batch has a unique ID and contains a set of products.
 
-```bash
-$ curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
-$ source "$HOME/.cargo/env"
-```
+### 8. **Supplier Management**
 
-- rust wasm32-unknown-unknown target
+- **Create Supplier:** Suppliers can be registered on the platform, linking them to the products they supply.
+- **View Suppliers:** Admins and sellers can view the list of all suppliers.
+- **Update Supplier:** Supplier information can be updated as needed.
+- **Delete Supplier:** Suppliers can be removed from the platform if they are no longer active.
 
-```bash
-$ rustup target add wasm32-unknown-unknown
-```
+## Input Validation
 
-- candid-extractor
+All user inputs are validated to ensure data integrity and security. For instance, when creating a user, the system checks that the username, email, and role are valid. Similarly, when handling orders or escrow transactions, the system verifies that all required fields are correctly filled out and that the values make sense (e.g., non-zero amounts for escrow).
 
-```bash
-$ cargo install candid-extractor
-```
+## Installation and Setup
 
-- install `dfx`
+To deploy this canister:
 
-```bash
-$ DFX_VERSION=0.15.0 sh -ci "$(curl -fsSL https://sdk.dfinity.org/install.sh)"
-$ echo 'export PATH="$PATH:$HOME/bin"' >> "$HOME/.bashrc"
-$ source ~/.bashrc
-$ dfx start --background --clean
-```
+1. **Clone the Repository:**
 
-## API Endpoints
+   ```bash
+   git clone <repository_url>
+   cd decentralized-ecommerce-marketplace
+   ```
 
-### Property Endpoints
+2. **Deploy the Canister:**
+   Follow the standard steps for deploying canisters on the Internet Computer. This typically involves using the DFINITY SDK to build and deploy the canister.
 
-1. `POST /properties`: Create a new property.
-2. `GET /properties/:id`: Get details of a specific property by ID.
-3. `PUT /properties/:id`: Update details of a specific property by ID.
-4. `DELETE /properties/:id`: Delete a specific property by ID.
-5. `POST /properties/:id/transfer`: Transfer ownership of a property.
+3. **Interact with the Canister:**
+   Use the candid interface or a front-end application to interact with the deployed canister, managing users, products, orders, and other entities.
 
-### Supplier Endpoints
+## Usage
 
-1. `POST /suppliers`: Create a new user.
-2. `GET /suppliers/:id`: Get details of a specific user by ID.
-3. `PUT /suppliers/:id`: Update details of a specific user by ID.
-4. `DELETE /suppliers/:id`: Delete a specific user by ID.
+The platform can be used by various stakeholders:
 
-## Example API Endpoints Usage
+- **Buyers** can browse products, place orders, and manage their profiles.
+- **Sellers** can list products, manage their inventories, and handle orders.
+- **Admins** oversee the platform, resolve disputes, and manage users and suppliers.
 
-- Create 2 new users:
+## Contributing
 
-```bash
-dfx canister call tokenized_real_estate_ownership_rust add_user '(record { name = "User 1"; contact_info = "user1@users.com"; })'
-dfx canister call tokenized_real_estate_ownership_rust add_user '(record { name = "User 2"; contact_info = "user2@users.com"; })'
-```
+Contributions to improve the Decentralized E-commerce Marketplace are welcome. Please fork the repository and submit a pull request with your enhancements.
 
-- Read User 1's details:
+## License
 
-```bash
-dfx canister call tokenized_real_estate_ownership_rust get_user '(0)'
-```
-
-- Update User 2's contact details:
-
-```bash
-dfx canister call tokenized_real_estate_ownership_rust update_user '(1, record {name = "User 2"; contact_info = "updateduser2@user.com"; })'
-```
-
-- Create a property:
-
-```bash
-dfx canister call tokenized_real_estate_ownership_rust add_property '(record {address = "Address 1"; tokenized_shares = 1000; owner_id = 0; })'
-```
-
-- Read Property's details:
-
-```bash
-dfx canister call tokenized_real_estate_ownership_rust get_property '(<PROPERTY_ID>)'
-```
-
-- Update Property's address:
-
-```bash
-dfx canister call tokenized_real_estate_ownership_rust update_property '(<PROPERTY_ID>, record {address = "Updated Address 2"; tokenized_shares = 1000; owner_id = <USER_1_ID>; })'
-```
-
-- Transfer property from User 1 to User 2:
-
-```bash
-dfx canister call tokenized_real_estate_ownership_rust transfer_ownership '(<PROPERTY_ID>, <USER_1_ID>, <USER_2_ID>, 300)'
-```
-
-- Delete the property, then the 2 users:
-
-```bash
-dfx canister call tokenized_real_estate_ownership_rust delete_property '(<PROPERTY_ID>)'
-dfx canister call tokenized_real_estate_ownership_rust delete_user '(<USER_1_ID>)'
-dfx canister call tokenized_real_estate_ownership_rust delete_user '(<USER_2_ID>)'
-```
-
-PLEASE REMEMBER TO REPLACE THE VARIOUS IDs WITH THE APPROPRIATE IDs FROM THE RESULTS RETURNED FROM THE TERMINAL
+This project is licensed under the MIT License. See the LICENSE file for details.
