@@ -462,6 +462,157 @@ fn delete_order(order_id: u64) -> Result<Order, Error> {
     }
 }
 
+#[ic_cdk::update]
+fn complete_order(order_id: u64) -> Result<Order, Error> {
+    let order_opt = ORDERS_STORAGE.with(|storage| storage.borrow().get(&order_id));
+    let mut order = match order_opt {
+        Some(o) => o,
+        None => return Err(Error::NotFound {
+            msg: format!("Order with id={} not found", order_id),
+        }),
+    };
+    
+    if order.status != "Pending" {
+        return Err(Error::InvalidInput {
+            msg: "Order is not in a pending state.".to_string(),
+        });
+    }
+    
+    order.status = "Completed".to_string();
+    order.updated_at = Some(time());
+    
+    ORDERS_STORAGE.with(|storage| storage.borrow_mut().insert(order.id, order.clone()));
+    Ok(order)
+}
+
+#[ic_cdk::update]
+fn manage_inventory(product_id: u64, quantity: u64) -> Result<Product, Error> {
+    let product_opt = PRODUCTS_STORAGE.with(|storage| storage.borrow().get(&product_id));
+    let mut product = match product_opt {
+        Some(p) => p,
+        None => return Err(Error::NotFound {
+            msg: format!("Product with id={} not found", product_id),
+        }),
+    };
+    
+    if quantity == 0 {
+        return Err(Error::InvalidInput {
+            msg: "Product quantity must be greater than zero.".to_string(),
+        });
+    }
+    
+    product.quantity = quantity;
+    product.updated_at = Some(time());
+    PRODUCTS_STORAGE.with(|storage| storage.borrow_mut().insert(product.id, product.clone()));
+    Ok(product)
+}
+
+#[ic_cdk::update]
+fn handle_escrow(order_id: u64, amount: u64) -> Result<Escrow, Error> {
+    if amount == 0 {
+        return Err(Error::InvalidInput {
+            msg: "Amount must be greater than zero.".to_string(),
+        });
+    }
+
+    let id = ESCROW_ID_COUNTER
+        .with(|counter| {
+            let current_value = *counter.borrow().get();
+            counter.borrow_mut().set(current_value + 1)
+        })
+        .expect("cannot increment escrow id counter");
+
+    let escrow = Escrow {
+        id,
+        order_id,
+        amount,
+        status: "held".to_string(),
+        created_at: time(),
+        updated_at: None,
+    };
+
+    ESCROWS_STORAGE.with(|storage| storage.borrow_mut().insert(escrow.id, escrow.clone()));
+    Ok(escrow)
+}
+
+#[ic_cdk::update]
+fn release_escrow(escrow_id: u64) -> Result<Escrow, Error> {
+    let escrow_opt = ESCROWS_STORAGE.with(|storage| storage.borrow().get(&escrow_id));
+    let mut escrow = match escrow_opt {
+        Some(e) => e,
+        None => return Err(Error::NotFound {
+            msg: format!("Escrow with id={} not found", escrow_id),
+        }),
+    };
+
+    if escrow.status != "held" {
+        return Err(Error::InvalidInput {
+            msg: "Escrow is not in a held state.".to_string(),
+        });
+    }
+
+    escrow.status = "released".to_string();
+    escrow.updated_at = Some(time());
+
+    ESCROWS_STORAGE.with(|storage| storage.borrow_mut().insert(escrow.id, escrow.clone()));
+    Ok(escrow)
+}
+
+#[ic_cdk::update]
+fn refund_escrow(escrow_id: u64) -> Result<Escrow, Error> {
+    let escrow_opt = ESCROWS_STORAGE.with(|storage| storage.borrow().get(&escrow_id));
+    let mut escrow = match escrow_opt {
+        Some(e) => e,
+        None => return Err(Error::NotFound {
+            msg: format!("Escrow with id={} not found", escrow_id),
+        }),
+    };
+
+    if escrow.status != "held" {
+        return Err(Error::InvalidInput {
+            msg: "Escrow is not in a held state.".to_string(),
+        });
+    }
+
+    escrow.status = "refunded".to_string();
+    escrow.updated_at = Some(time());
+
+    ESCROWS_STORAGE.with(|storage| storage.borrow_mut().insert(escrow.id, escrow.clone()));
+    Ok(escrow)
+}
+
+#[ic_cdk::update]
+fn resolve_dispute(order_id: u64, resolution: String) -> Result<Order, Error> {
+    let order_opt = ORDERS_STORAGE.with(|storage| storage.borrow().get(&order_id));
+    let mut order = match order_opt {
+        Some(o) => o,
+        None => return Err(Error::NotFound {
+            msg: format!("Order with id={} not found", order_id),
+        }),
+    };
+
+    if order.status != "Pending" && order.status != "In Dispute" {
+        return Err(Error::InvalidInput {
+            msg: "Order is not in a disputable state.".to_string(),
+        });
+    }
+
+    match resolution.as_str() {
+        "Complete" => order.status = "Completed".to_string(),
+        "Refund" => {
+            order.status = "Refunded".to_string();
+            // Refund logic here, potentially interacting with escrow.
+        },
+        _ => return Err(Error::InvalidInput {
+            msg: "Invalid resolution type.".to_string(),
+        }),
+    }
+
+    order.updated_at = Some(time());
+    ORDERS_STORAGE.with(|storage| storage.borrow_mut().insert(order.id, order.clone()));
+    Ok(order)
+}
+
 fn generate_id(counter: &RefCell<IdCell>) -> Result<u64, Error> {
     // Borrow the `IdCell` from the `RefCell` for mutable access
     let mut counter_borrow = counter.borrow_mut();
@@ -476,7 +627,7 @@ fn generate_id(counter: &RefCell<IdCell>) -> Result<u64, Error> {
 
 
 fn validate_product_payload(payload: &ProductPayload) -> Result<(), Error> {
-    if payload.name.is_empty() || payload.description.is_empty() || payload.price == 0 || payload.stock_quantity == 0 || payload.seller_id == 0 {
+    if payload.name.is_empty() || payload.description.is_empty() || payload.price <= 0 || payload.stock_quantity <= 0 || payload.seller_id <= 0 {
         return Err(Error::InvalidInput {
             msg: "Product name, description, price, stock_quantity, and seller_id must be provided.".to_string(),
         });
