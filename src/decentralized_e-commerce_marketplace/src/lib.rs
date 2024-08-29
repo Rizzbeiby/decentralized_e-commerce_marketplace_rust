@@ -362,7 +362,7 @@ fn create_order(payload: OrderPayload) -> Result<Order, Error> {
     validate_order_payload(&payload)?;
 
     // Ensure the buyer and product exist
-    let buyer = match _get_user(&payload.user_id) {
+    match _get_user(&payload.user_id) {
         Some(user) => user,
         None => return Err(Error::NotFound {
             msg: format!("User with id={} not found", payload.user_id),
@@ -486,7 +486,7 @@ fn complete_order(order_id: u64) -> Result<Order, Error> {
 }
 
 #[ic_cdk::update]
-fn manage_inventory(product_id: u64, quantity: u64) -> Result<Product, Error> {
+fn manage_inventory(product_id: u64, quantity: u32) -> Result<Product, Error> {
     let product_opt = PRODUCTS_STORAGE.with(|storage| storage.borrow().get(&product_id));
     let mut product = match product_opt {
         Some(p) => p,
@@ -501,7 +501,7 @@ fn manage_inventory(product_id: u64, quantity: u64) -> Result<Product, Error> {
         });
     }
     
-    product.quantity = quantity;
+    product.stock_quantity = quantity;
     product.updated_at = Some(time());
     PRODUCTS_STORAGE.with(|storage| storage.borrow_mut().insert(product.id, product.clone()));
     Ok(product)
@@ -531,13 +531,13 @@ fn handle_escrow(order_id: u64, amount: u64) -> Result<Escrow, Error> {
         updated_at: None,
     };
 
-    ESCROWS_STORAGE.with(|storage| storage.borrow_mut().insert(escrow.id, escrow.clone()));
+    ESCROW_STORAGE.with(|storage| storage.borrow_mut().insert(escrow.id, escrow.clone()));
     Ok(escrow)
 }
 
 #[ic_cdk::update]
 fn release_escrow(escrow_id: u64) -> Result<Escrow, Error> {
-    let escrow_opt = ESCROWS_STORAGE.with(|storage| storage.borrow().get(&escrow_id));
+    let escrow_opt = ESCROW_STORAGE.with(|storage| storage.borrow().get(&escrow_id));
     let mut escrow = match escrow_opt {
         Some(e) => e,
         None => return Err(Error::NotFound {
@@ -554,13 +554,13 @@ fn release_escrow(escrow_id: u64) -> Result<Escrow, Error> {
     escrow.status = "released".to_string();
     escrow.updated_at = Some(time());
 
-    ESCROWS_STORAGE.with(|storage| storage.borrow_mut().insert(escrow.id, escrow.clone()));
+    ESCROW_STORAGE.with(|storage| storage.borrow_mut().insert(escrow.id, escrow.clone()));
     Ok(escrow)
 }
 
 #[ic_cdk::update]
 fn refund_escrow(escrow_id: u64) -> Result<Escrow, Error> {
-    let escrow_opt = ESCROWS_STORAGE.with(|storage| storage.borrow().get(&escrow_id));
+    let escrow_opt = ESCROW_STORAGE.with(|storage| storage.borrow().get(&escrow_id));
     let mut escrow = match escrow_opt {
         Some(e) => e,
         None => return Err(Error::NotFound {
@@ -577,7 +577,7 @@ fn refund_escrow(escrow_id: u64) -> Result<Escrow, Error> {
     escrow.status = "refunded".to_string();
     escrow.updated_at = Some(time());
 
-    ESCROWS_STORAGE.with(|storage| storage.borrow_mut().insert(escrow.id, escrow.clone()));
+    ESCROW_STORAGE.with(|storage| storage.borrow_mut().insert(escrow.id, escrow.clone()));
     Ok(escrow)
 }
 
@@ -619,7 +619,7 @@ fn generate_id(counter: &RefCell<IdCell>) -> Result<u64, Error> {
 
     // Get the current value and increment it
     let current_value = *counter_borrow.get();
-    counter_borrow.set(current_value + 1);
+    let _ = counter_borrow.set(current_value + 1);
 
     // Return the new value
     Ok(current_value + 1)
